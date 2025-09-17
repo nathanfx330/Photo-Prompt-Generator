@@ -3,54 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photo Shot Descriptor</title>
+    <title>Professional Photo Prompt Generator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #1a1a1a; /* Dark background */
-            color: #e0e0e0; /* Light text */
+            background-color: #1a1a1a;
+            color: #e0e0e0;
         }
         .container {
             max-width: 800px;
             margin: auto;
-            background: #282828; /* Slightly lighter dark for container */
+            background: #282828;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5); /* Stronger shadow for depth */
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
         h1 {
             text-align: center;
-            color: #87ceeb; /* A light blue for headings */
+            color: #87ceeb;
             margin-bottom: 30px;
         }
         h2 {
-            color: #a0a0a0; /* Slightly subdued heading for sections */
+            color: #a0a0a0;
+            border-bottom: 1px solid #444;
+            padding-bottom: 10px;
+            margin-top: 25px;
         }
         .form-group {
             margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            align-items: center;
+            gap: 15px;
         }
         label {
-            display: block;
-            margin-bottom: 5px;
             font-weight: bold;
-            color: #d0d0d0; /* Lighter label text */
+            color: #d0d0d0;
+            text-align: right;
         }
         input[type="text"],
-        select {
-            width: calc(100% - 10px);
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
             padding: 10px;
-            border: 1px solid #555; /* Darker border */
+            border: 1px solid #555;
             border-radius: 4px;
             box-sizing: border-box;
-            background-color: #3a3a3a; /* Dark input background */
-            color: #e0e0e0; /* Light input text */
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+        }
+        textarea {
+            font-family: 'Courier New', Courier, monospace;
+            resize: vertical;
+            grid-column: 2 / 3;
+        }
+        .full-width {
+             grid-column: 1 / 3;
         }
         button {
             display: block;
             width: 100%;
             padding: 12px;
-            background-color: #6a5acd; /* A nice medium purple for buttons */
+            background-color: #6a5acd;
             color: white;
             border: none;
             border-radius: 4px;
@@ -60,23 +76,15 @@
             margin-top: 25px;
         }
         button:hover {
-            background-color: #5a4ac2; /* Darker purple on hover */
+            background-color: #5a4ac2;
         }
         .output-section {
             margin-top: 30px;
-            border-top: 1px solid #444; /* Darker divider */
+            border-top: 1px solid #444;
             padding-top: 20px;
         }
-        textarea {
-            width: 100%;
-            height: 180px; /* Slightly taller for more output */
-            padding: 12px;
-            border: 1px solid #555;
-            border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
-            background-color: #333; /* Darker background for code */
-            color: #90ee90; /* Light green for code text (often used for JSON) */
-            resize: vertical;
+        #llmPromptOutput {
+            height: 220px;
         }
         pre {
             background-color: #333;
@@ -85,106 +93,242 @@
             font-family: 'Courier New', Courier, monospace;
             white-space: pre-wrap;
             word-wrap: break-word;
-            max-height: 220px; /* Slightly taller for more output */
+            max-height: 220px;
             overflow-y: auto;
-            color: #f0f0f0; /* Lighter text for JSON output */
-            border: 1px solid #555; /* Match textarea border */
+            color: #f0f0f0;
+            border: 1px solid #555;
+        }
+        details {
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            background-color: #303030;
+        }
+        details[open] {
+            background-color: #2a2a2a;
+        }
+        summary {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #87ceeb;
+            padding: 12px;
+            cursor: pointer;
+            user-select: none;
+            outline: none;
+        }
+        summary::marker {
+            color: #87ceeb;
+        }
+        .details-content {
+            padding: 20px;
+            border-top: 1px solid #444;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Photo Shot Descriptor</h1>
+        <h1>Professional Photo Prompt Generator</h1>
 
-        <div class="form-group">
-            <label for="subjectScene">Subject/Scene Description:</label>
-            <input type="text" id="subjectScene" placeholder="e.g., A girl on a boat, A boy at the beach">
+        <!-- Core Details Section -->
+        <details open>
+            <summary>Scene & Core Subject</summary>
+            <div class="details-content">
+                <div class="form-group">
+                    <label for="primarySubject">Primary Subject:</label>
+                    <select id="primarySubject" onchange="togglePersonSections()">
+                        <option value="person">Person</option>
+                        <option value="landscape">Landscape</option>
+                        <option value="object">Object / Still Life</option>
+                        <option value="animal">Animal</option>
+                        <option value="architecture">Architecture</option>
+                        <option value="abstract">Abstract</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scene">Scene Description:</label>
+                    <input type="text" id="scene" placeholder="e.g., a quiet forest at dawn, a bustling city street">
+                </div>
+                
+                <!-- Person-Specific Subject Details -->
+                <div id="personDetails">
+                    <hr style="grid-column: 1 / 3; border-color: #444; margin: 20px 0;">
+                    <div class="form-group">
+                        <label for="subjectType">Person Type:</label>
+                        <input type="text" id="subjectType" placeholder="e.g., a woman with freckles, an elderly man with a kind smile">
+                    </div>
+                    <div class="form-group">
+                        <label for="ageRange">Age Range:</label>
+                        <input type="text" id="ageRange" placeholder="e.g., 20s, 70s">
+                    </div>
+                    <div class="form-group">
+                        <label for="hair">Hair:</label>
+                        <input type="text" id="hair" placeholder="e.g., curly red hair, short buzz cut">
+                    </div>
+                    <div class="form-group">
+                        <label for="makeup">Makeup:</label>
+                        <input type="text" id="makeup" placeholder="e.g., natural makeup, smoky eyes, none">
+                    </div>
+                    <div class="form-group">
+                        <label for="jewelry">Jewelry:</label>
+                        <input type="text" id="jewelry" placeholder="e.g., small silver earrings, beaded necklace">
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- Container for all person-only sections -->
+        <div id="personSections">
+            <!-- Wardrobe Section -->
+            <details>
+                <summary>Wardrobe</summary>
+                <div class="details-content">
+                    <div class="form-group">
+                        <label for="top">Top:</label>
+                        <input type="text" id="top" placeholder="e.g., a simple white t-shirt, a wool sweater">
+                    </div>
+                    <div class="form-group">
+                        <label for="bottom">Bottom:</label>
+                        <input type="text" id="bottom" placeholder="e.g., dark-wash jeans, plaid skirt">
+                    </div>
+                    <div class="form-group">
+                        <label for="footwear">Footwear:</label>
+                        <input type="text" id="footwear" placeholder="e.g., leather boots, clean sneakers">
+                    </div>
+                    <div class="form-group">
+                        <label for="wardrobeNotes">Notes:</label>
+                        <input type="text" id="wardrobeNotes" placeholder="e.g., casual and comfortable, formal attire">
+                    </div>
+                </div>
+            </details>
+
+            <!-- Pose & Framing Section -->
+            <details>
+                <summary>Pose & Framing</summary>
+                <div class="details-content">
+                    <div class="form-group">
+                        <label for="poseAngle">Angle / Type:</label>
+                        <input type="text" id="poseAngle" placeholder="e.g., candid portrait, low-angle action shot">
+                    </div>
+                    <div class="form-group">
+                        <label for="bodyPose">Body:</label>
+                        <input type="text" id="bodyPose" placeholder="e.g., leaning against a wall, walking toward camera">
+                    </div>
+                    <div class="form-group">
+                        <label for="hands">Hands:</label>
+                        <input type="text" id="hands" placeholder="e.g., hands in pockets, holding a coffee cup">
+                    </div>
+                    <div class="form-group">
+                        <label for="framing">Framing:</label>
+                        <input type="text" id="framing" placeholder="e.g., full body shot, medium close-up, headshot">
+                    </div>
+                </div>
+            </details>
         </div>
 
-        <div class="form-group">
-            <label for="cameraAngle">Camera Angle:</label>
-            <select id="cameraAngle">
-                <option value="eye-level">Eye-level shot</option>
-                <option value="low-angle">Low-angle shot</option>
-                <option value="high-angle">High-angle shot</option>
-                <option value="dutch-tilt">Dutch tilt</option>
-                <option value="over-the-shoulder">Over-the-shoulder shot</option>
-                <option value="bird-eye">Bird's-eye view</option>
-                <option value="worm-eye">Worm's-eye view</option>
-                <option value="selfie-perspective">Selfie perspective</option>
-            </select>
-        </div>
+        <!-- Camera & Look Section -->
+        <details>
+            <summary>Camera & Look</summary>
+            <div class="details-content">
+                 <div class="form-group">
+                    <label for="device">Device:</label>
+                    <input type="text" id="device" placeholder="e.g., modern DSLR, vintage film camera, smartphone">
+                </div>
+                <div class="form-group">
+                    <label for="flash">Flash:</label>
+                    <input type="text" id="flash" placeholder="e.g., soft off-camera flash, no flash, natural light only">
+                </div>
+                <div class="form-group">
+                    <label for="orientation">Orientation:</label>
+                    <select id="orientation">
+                        <option value="vertical">Vertical</option>
+                        <option value="horizontal">Horizontal</option>
+                        <option value="square">Square</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="aspectRatio">Aspect Ratio:</label>
+                     <select id="aspectRatio">
+                        <option value="3:2">3:2</option>
+                        <option value="4:3">4:3</option>
+                        <option value="16:9">16:9</option>
+                        <option value="1:1">1:1</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="focus">Focus:</label>
+                    <input type="text" id="focus" placeholder="e.g., tack sharp on the subject, soft focus, deep depth of field">
+                </div>
+                <div class="form-group">
+                    <label for="texture">Texture:</label>
+                    <input type="text" id="texture" placeholder="e.g., fine film grain, clean digital image, slightly noisy">
+                </div>
+                <div class="form-group">
+                    <label for="color">Color:</label>
+                    <input type="text" id="color" placeholder="e.g., warm and vibrant, muted tones, high contrast black and white">
+                </div>
+                <div class="form-group">
+                    <label for="effects">Effects:</label>
+                    <input type="text" id="effects" placeholder="e.g., subtle vignette, light leak effect, lens flare">
+                </div>
+            </div>
+        </details>
+        
+        <!-- Environment & Style Section -->
+        <details>
+            <summary>Environment & Style</summary>
+            <div class="details-content">
+                <div class="form-group">
+                    <label for="environment">Environment:</label>
+                    <input type="text" id="environment" placeholder="e.g., dense forest, minimalist studio, empty desert">
+                </div>
+                <div class="form-group">
+                    <label for="props">Props:</label>
+                    <input type="text" id="props" placeholder="e.g., vintage armchair, stack of old books, lone tree">
+                </div>
+                 <div class="form-group">
+                    <label for="genre">Genre:</label>
+                    <input type="text" id="genre" placeholder="e.g., documentary style, fine art portrait, cinematic landscape">
+                </div>
+                <div class="form-group">
+                    <label for="authenticity">Authenticity:</label>
+                    <input type="text" id="authenticity" placeholder="e.g., imperfect candid moment, hyperrealistic, painterly">
+                </div>
+            </div>
+        </details>
+        
+        <!-- Exclusions Section -->
+        <details>
+            <summary>Exclusions (Negative Prompt)</summary>
+             <div class="details-content">
+                <div class="form-group full-width">
+                    <label for="ban">Things to avoid (one per line):</label>
+                    <textarea id="ban" rows="5" placeholder="blurry image&#10;poor lighting&#10;watermarks&#10;text overlays"></textarea>
+                </div>
+            </div>
+        </details>
 
-        <div class="form-group">
-            <label for="shotType">Shot Type:</label>
-            <select id="shotType">
-                <option value="close-up">Close-up</option>
-                <option value="medium-shot">Medium shot</option>
-                <option value="long-shot">Long shot</option>
-                <option value="extreme-close-up">Extreme close-up</option>
-                <option value="wide-shot">Wide shot</option>
-                <option value="full-shot">Full shot (Full Body)</option>
-                <option value="medium-close-up">Medium close-up</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="timeOfDay">Time of Day:</label>
-            <select id="timeOfDay">
-                <option value="sunrise">Sunrise</option>
-                <option value="morning">Morning</option>
-                <option value="midday">Midday</option>
-                <option value="afternoon">Afternoon</option>
-                <option value="sunset">Sunset</option>
-                <option value="golden-hour">Golden Hour</option>
-                <option value="blue-hour">Blue Hour</option>
-                <option value="night">Night</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="lightingStyle">Lighting Style:</label>
-            <select id="lightingStyle">
-                <option value="natural">Natural light</option>
-                <option value="softbox">Softbox lighting</option>
-                <option value="hard-light">Hard light</option>
-                <option value="backlighting">Backlighting</option>
-                <option value="rim-lighting">Rim lighting</option>
-                <option value="cinematic">Cinematic lighting</option>
-                <option value="flash">Flash photography</option>
-                <option value="dramatic">Dramatic lighting</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="eraPeriod">Era/Period:</label>
-            <select id="eraPeriod">
-                <option value="modern-2020s">Modern (2020s)</option>
-                <option value="mid-2010s">Mid-2010s</option>
-                <option value="early-2010s">Early 2010s</option>
-                <option value="2000s">2000s</option>
-                <option value="1990s">1990s</option>
-                <option value="1980s">1980s</option>
-                <option value="1970s">1970s</option>
-                <option value="1960s">1960s</option>
-                <option value="1950s">1950s</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="locationSpecifics">Location Specifics (optional):</label>
-            <input type="text" id="locationSpecifics" placeholder="e.g., sandy beach, dense forest, bustling city street">
-        </div>
-
-        <div class="form-group">
-            <label for="moodAtmosphere">Mood/Atmosphere (optional):</label>
-            <input type="text" id="moodAtmosphere" placeholder="e.g., joyful, melancholic, suspenseful">
-        </div>
-
-        <div class="form-group">
-            <label for="styleAesthetic">Style/Aesthetic (optional):</label>
-            <input type="text" id="styleAesthetic" placeholder="e.g., cinematic, vintage film, documentary, vibrant colors">
-        </div>
+        <!-- Output Settings Section -->
+        <details>
+            <summary>Output Settings</summary>
+            <div class="details-content">
+                <div class="form-group">
+                    <label for="count">Image Count:</label>
+                    <input type="number" id="count" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="size">Size:</label>
+                    <input type="text" id="size" placeholder="e.g., 1024x1536">
+                </div>
+                <div class="form-group">
+                    <label for="safety">Content Safety:</label>
+                    <select id="safety">
+                        <option value="strict">Strict</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+            </div>
+        </details>
 
         <button onclick="generateShotDescription()">Generate Description</button>
 
@@ -198,102 +342,139 @@
     </div>
 
     <script>
-        function generateShotDescription() {
-            const subjectScene = document.getElementById('subjectScene').value.trim();
-            const cameraAngle = document.getElementById('cameraAngle').value;
-            const shotType = document.getElementById('shotType').value;
-            const timeOfDay = document.getElementById('timeOfDay').value;
-            const lightingStyle = document.getElementById('lightingStyle').value;
-            const eraPeriod = document.getElementById('eraPeriod').value;
-            const locationSpecifics = document.getElementById('locationSpecifics').value.trim();
-            const moodAtmosphere = document.getElementById('moodAtmosphere').value.trim();
-            const styleAesthetic = document.getElementById('styleAesthetic').value.trim();
+        function togglePersonSections() {
+            const subjectType = document.getElementById('primarySubject').value;
+            const personDetails = document.getElementById('personDetails');
+            const personSections = document.getElementById('personSections');
 
-            if (!subjectScene) {
-                alert("Please enter a subject/scene description.");
-                return;
+            if (subjectType === 'person') {
+                personDetails.style.display = 'block';
+                personSections.style.display = 'block';
+            } else {
+                personDetails.style.display = 'none';
+                personSections.style.display = 'none';
             }
+        }
 
-            const shotDescription = {
-                subject_scene: subjectScene,
+        function generateShotDescription() {
+            const getValue = id => document.getElementById(id).value.trim() || null;
+            const primarySubject = getValue('primarySubject');
+
+            const data = {
+                primary_subject: primarySubject,
+                scene: getValue('scene'),
                 camera: {
-                    angle: cameraAngle,
-                    shot_type: shotType
+                    device: getValue('device'),
+                    flash: getValue('flash'),
+                    orientation: getValue('orientation'),
+                    aspect_ratio: getValue('aspectRatio'),
+                    focus: getValue('focus')
                 },
-                environment: {
-                    time_of_day: timeOfDay,
-                    lighting_style: lightingStyle,
-                    era_period: eraPeriod
+                look: {
+                    texture: getValue('texture'),
+                    color: getValue('color'),
+                    effects: getValue('effects')
+                },
+                background: {
+                    environment: getValue('environment'),
+                    props: getValue('props')
+                },
+                style: {
+                    genre: getValue('genre'),
+                    authenticity: getValue('authenticity')
+                },
+                ban: getValue('ban')?.split('\n').filter(line => line.trim() !== '') || [],
+                output: {
+                    count: parseInt(document.getElementById('count').value, 10),
+                    size: getValue('size'),
+                    safety: getValue('safety')
                 }
             };
 
-            if (locationSpecifics) {
-                shotDescription.environment.location_specifics = locationSpecifics;
-            }
-            if (moodAtmosphere) {
-                shotDescription.mood_atmosphere = moodAtmosphere;
-            }
-            if (styleAesthetic) {
-                shotDescription.style_aesthetic = styleAesthetic;
+            // Conditionally add person-specific data
+            if (primarySubject === 'person') {
+                data.subject = {
+                    type: getValue('subjectType'),
+                    age_range: getValue('ageRange'),
+                    hair: getValue('hair'),
+                    makeup: getValue('makeup'),
+                    jewelry: getValue('jewelry')
+                };
+                data.wardrobe = {
+                    top: getValue('top'),
+                    bottom: getValue('bottom'),
+                    footwear: getValue('footwear'),
+                    notes: getValue('wardrobeNotes')
+                };
+                data.pose = {
+                    angle: getValue('poseAngle'),
+                    body: getValue('bodyPose'),
+                    hands: getValue('hands'),
+                    framing: getValue('framing')
+                };
             }
 
             // Generate JSON output
-            document.getElementById('jsonOutput').textContent = JSON.stringify(shotDescription, null, 2);
+            document.getElementById('jsonOutput').textContent = JSON.stringify(data, (key, value) => {
+                if (value === null) return undefined;
+                if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return undefined;
+                return value;
+            }, 2);
 
             // Generate LLM Prompt
-            let prompt = `${subjectScene}, `;
+            let promptParts = [];
+            if (data.scene) promptParts.push(data.scene);
 
-            // Add era/period details
-            switch (eraPeriod) {
-                case 'modern-2020s': prompt += 'photographed in a modern 2020s style. '; break;
-                case 'mid-2010s': prompt += 'captured in the aesthetic of the mid-2010s. '; break;
-                case 'early-2010s': prompt += 'reminiscent of early 2010s photography. '; break;
-                case '2000s': prompt += 'with a distinct 2000s era feel. '; break;
-                case '1990s': prompt += 'featuring 1990s photography style. '; break;
-                case '1980s': prompt += 'reflecting 1980s photographic trends. '; break;
-                case '1970s': prompt += 'styled like a 1970s photograph. '; break;
-                case '1960s': prompt += 'evoking a 1960s photography vibe. '; break;
-                case '1950s': prompt += 'in the classic photography style of the 1950s. '; break;
-            }
-
-            // Add location
-            if (locationSpecifics) {
-                prompt += `Location: ${locationSpecifics}. `;
-            }
-
-            // Handle selfie perspective
-            if (cameraAngle === 'selfie-perspective') {
-                prompt += `taken from a selfie perspective, held by the subject. `;
-                // Suggest full shot if selfie perspective is chosen and current shot type isn't full-shot
-                // This is a soft suggestion for the prompt, not a forced UI change.
-                if (shotType !== 'full-shot') {
-                    prompt += `Emphasize a full body shot. `;
-                }
-            } else {
-                prompt += `${shotType} from a ${cameraAngle} perspective. `;
-            }
-
-            // Add explicit "full body" if full-shot is chosen
-            if (shotType === 'full-shot') {
-                prompt += `The subject's full body is visible. `;
-            }
-
-            // Add time of day and lighting
-            prompt += `Time of day: ${timeOfDay}. Lighting: ${lightingStyle}. `;
-
-            // Add mood and style
-            if (moodAtmosphere) {
-                prompt += `Atmosphere: ${moodAtmosphere}. `;
-            }
-            if (styleAesthetic) {
-                prompt += `Style: ${styleAesthetic}. `;
+            // Add person details if they exist
+            if (data.subject && Object.values(data.subject).some(v => v)) {
+                let subjectDesc = `A ${data.subject.age_range || ''} ${data.subject.type || 'person'}`;
+                if(data.subject.hair) subjectDesc += ` with ${data.subject.hair} hair`;
+                if(data.subject.makeup) subjectDesc += `, wearing ${data.subject.makeup}`;
+                if(data.subject.jewelry) subjectDesc += ` and ${data.subject.jewelry}`;
+                promptParts.push(subjectDesc.trim().replace(/ +/g, ' ') + ".");
             }
             
-            prompt += `High-resolution, photorealistic.`;
+            if (data.wardrobe && (data.wardrobe.top || data.wardrobe.bottom || data.wardrobe.footwear)) {
+                let wardrobeDesc = "Outfit: " + [data.wardrobe.top, data.wardrobe.bottom, data.wardrobe.footwear].filter(Boolean).join(', ') + ".";
+                if(data.wardrobe.notes) wardrobeDesc += ` (${data.wardrobe.notes}).`;
+                promptParts.push(wardrobeDesc);
+            }
 
+            if(data.pose && Object.values(data.pose).some(v => v)) {
+                let poseParts = [];
+                if(data.pose.angle) poseParts.push(`Pose: ${data.pose.angle}`);
+                if(data.pose.body) poseParts.push(data.pose.body);
+                if(data.pose.hands) poseParts.push(data.pose.hands);
+                if(data.pose.framing) poseParts.push(`Framing is ${data.pose.framing}.`);
+                promptParts.push(poseParts.join(', '));
+            }
+
+            let techDetails = [];
+            if(data.camera.device) techDetails.push(`shot on a ${data.camera.device}`);
+            if(data.camera.flash) techDetails.push(`flash is ${data.camera.flash}`);
+            if(data.camera.focus) techDetails.push(`focus is ${data.camera.focus}`);
+            if(data.look.texture) techDetails.push(data.look.texture);
+            if(data.look.color) techDetails.push(data.look.color);
+            if(data.look.effects) techDetails.push(data.look.effects);
+            if(techDetails.length > 0) promptParts.push("Technical look: " + techDetails.join(', ') + ".");
+            
+            if(data.background.environment) promptParts.push(`Background is a ${data.background.environment}.`);
+            if(data.background.props) promptParts.push(`Visible props include ${data.background.props}.`);
+            if(data.style.genre) promptParts.push(`Style is a ${data.style.genre}.`);
+            if(data.style.authenticity) promptParts.push(`The overall feel is an ${data.style.authenticity}.`);
+            
+            let prompt = promptParts.join(' ').replace(/\s+/g, ' ').trim();
+            prompt += ` Aspect ratio ${data.camera.aspect_ratio || '3:2'}. High-resolution, photorealistic.`;
+
+            if (data.ban.length > 0) {
+                prompt += ` --no ${data.ban.join(', ')}`;
+            }
 
             document.getElementById('llmPromptOutput').value = prompt;
         }
+
+        // Initial call to set the correct UI state on page load
+        document.addEventListener('DOMContentLoaded', togglePersonSections);
     </script>
 </body>
 </html>
